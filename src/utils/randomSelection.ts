@@ -21,15 +21,16 @@ export const selectRandomItems = <T>(items: T[], count: number): T[] => {
 };
 
 /**
- * Creates GameItem objects from strings
+ * Creates GameItem objects from items with text and weight
  */
 export const createGameItems = (
-  items: string[],
+  items: { text: string; weight: number }[],
   isReward: boolean
 ): GameItem[] => {
-  return items.map((text, index) => ({
+  return items.map((item, index) => ({
     id: `${isReward ? 'reward' : 'activity'}-${index}`,
-    text,
+    text: item.text,
+    weight: item.weight,
     isReward,
     isRevealed: false,
   }));
@@ -39,8 +40,8 @@ export const createGameItems = (
  * Combines and shuffles activities and rewards for suitcases
  */
 export const createShuffledGameItems = (
-  activities: string[],
-  rewards: string[]
+  activities: { text: string; weight: number }[],
+  rewards: { text: string; weight: number }[]
 ): GameItem[] => {
   const activityItems = createGameItems(activities, false);
   const rewardItems = createGameItems(rewards, true);

@@ -62,19 +62,24 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ onKidSelected }) => {
     setSpinDuration(duration);
     setRotation(newRotation);
 
-    // Play ticking sounds during spin
-    const tickInterval = setInterval(() => {
-      playSound('spin');
-    }, 100);
+    // Play spinning wheel sound in loop
+    const spinAudio = playSound('spin', true);
 
     // After spin completes
     setTimeout(() => {
-      clearInterval(tickInterval);
+      // Stop the looping spin sound
+      if (spinAudio && spinAudio instanceof HTMLAudioElement) {
+        spinAudio.pause();
+        spinAudio.currentTime = 0;
+      }
+
       setIsSpinning(false);
       setSelectedKid(name);
 
-      // Confetti celebration with sound
-      playSound('confetti');
+      // Play winner announcement fanfare
+      playSound('wheel-winner');
+
+      // Confetti celebration
       confetti({
         particleCount: 100,
         spread: 70,

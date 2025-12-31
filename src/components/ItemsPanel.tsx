@@ -9,6 +9,9 @@ interface ItemsPanelProps {
 }
 
 const ItemsPanel: React.FC<ItemsPanelProps> = ({ title, items, isReward }) => {
+  // Sort items by weight (ascending order)
+  const sortedItems = [...items].sort((a, b) => a.weight - b.weight);
+
   return (
     <div
       className={`bg-white/95 backdrop-blur rounded-2xl shadow-xl p-3 md:p-4 ${
@@ -24,7 +27,7 @@ const ItemsPanel: React.FC<ItemsPanelProps> = ({ title, items, isReward }) => {
       </h3>
 
       <div className="space-y-1.5">
-        {items.map((item, index) => (
+        {sortedItems.map((item, index) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, x: isReward ? 20 : -20 }}
@@ -47,7 +50,7 @@ const ItemsPanel: React.FC<ItemsPanelProps> = ({ title, items, isReward }) => {
       </div>
 
       <div className="mt-3 text-center text-xs md:text-sm text-gray-600">
-        {items.filter((i) => !i.isRevealed).length} remaining
+        {sortedItems.filter((i) => !i.isRevealed).length} remaining
       </div>
     </div>
   );

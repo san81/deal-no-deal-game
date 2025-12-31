@@ -1,4 +1,4 @@
-export type Theme = 'boy' | 'girl';
+export type Theme = 'boy' | 'girl' | 'adult';
 
 export type GamePhase =
   | 'kid-setup'
@@ -18,6 +18,7 @@ export interface GameItem {
   text: string;
   isReward: boolean;
   isRevealed: boolean;
+  weight: number; // 1-10 scale, higher = more valuable/harder
 }
 
 export interface Suitcase {
@@ -52,4 +53,6 @@ export interface GameState {
   swapAccepted: boolean;
   originalCaseId: number | null;
   result: GameResult | null;
+  adultMultiplier?: number; // For adult theme
+  numberOfPlayers?: number; // For adult theme
 }

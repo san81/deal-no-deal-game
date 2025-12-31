@@ -11,17 +11,73 @@ const BankerOffer: React.FC = () => {
 
   useEffect(() => {
     if (state.phase === 'banker-offer') {
-      // Select a random unrevealed activity
-      const unrevealedActivities = state.activities.filter((a) => !a.isRevealed);
-      if (unrevealedActivities.length > 0) {
-        const randomActivity =
-          unrevealedActivities[
-            Math.floor(Math.random() * unrevealedActivities.length)
-          ];
-        setOffer(randomActivity);
+      // Get all unrevealed items (activities + rewards) on screen
+      const unrevealedItems = [
+        ...state.activities.filter((a) => !a.isRevealed),
+        ...state.rewards.filter((r) => !r.isRevealed),
+      ];
+
+      if (unrevealedItems.length > 0) {
+        // Calculate average weight of all unrevealed items
+        const totalWeight = unrevealedItems.reduce((sum, item) => sum + item.weight, 0);
+        const averageWeight = totalWeight / unrevealedItems.length;
+        const targetWeight = Math.ceil(averageWeight);
+
+        // For adult theme, calculate and offer the dollar amount directly
+        if (state.theme === 'adult' && state.adultMultiplier && state.numberOfPlayers) {
+          const maxAmount = state.numberOfPlayers * state.adultMultiplier;
+          const activityRange = maxAmount * 0.15; // First 15% for activities (weights 1-5)
+          const rewardRange = maxAmount * 0.85; // Remaining 85% for rewards (weights 6-10)
+
+          // Convert rounded-up average weight to dollar amount
+          let dollarAmount: number;
+          if (targetWeight <= 5) {
+            dollarAmount = (targetWeight / 5) * activityRange;
+          } else {
+            dollarAmount = activityRange + ((targetWeight - 5) / 5) * rewardRange;
+          }
+
+          // Format the dollar amount
+          const formatCurrency = (amount: number): string => {
+            if (amount < 1) {
+              return `$${amount.toFixed(2)}`;
+            } else if (amount < 1000) {
+              return `$${Math.round(amount)}`;
+            } else if (amount < 1000000) {
+              return `$${(amount / 1000).toFixed(1)}K`.replace('.0K', 'K');
+            } else {
+              return `$${(amount / 1000000).toFixed(2)}M`.replace('.00M', 'M');
+            }
+          };
+
+          // Create synthetic offer item for adult theme
+          const syntheticOffer: GameItem = {
+            id: 'banker-offer',
+            text: formatCurrency(dollarAmount),
+            isReward: targetWeight > 5, // Treat as reward if weight > 5
+            isRevealed: false,
+            weight: targetWeight,
+          };
+
+          setOffer(syntheticOffer);
+        } else {
+          // For non-adult themes, find item closest to target weight
+          let closestItem = unrevealedItems[0];
+          let smallestDifference = Math.abs(closestItem.weight - targetWeight);
+
+          for (const item of unrevealedItems) {
+            const difference = Math.abs(item.weight - targetWeight);
+            if (difference < smallestDifference) {
+              smallestDifference = difference;
+              closestItem = item;
+            }
+          }
+
+          setOffer(closestItem);
+        }
       }
     }
-  }, [state.phase, state.activities]);
+  }, [state.phase, state.activities, state.rewards, state.theme, state.adultMultiplier, state.numberOfPlayers]);
 
   if (state.phase !== 'banker-offer' || !offer) {
     return null;
@@ -57,16 +113,24 @@ const BankerOffer: React.FC = () => {
 
           <div className="bg-white/20 backdrop-blur rounded-2xl p-6 mb-6">
             <p className="text-xl md:text-2xl text-center mb-4">
-              "Hey kiddo! I'll let you skip this activity if you quit now!"
+              {state.theme === 'adult'
+                ? '"I\'ll pay you this amount if you quit now!"'
+                : offer.isReward
+                ? '"Hey kiddo! I\'ll give you this reward if you quit now!"'
+                : '"Hey kiddo! I\'ll let you skip this activity if you quit now!"'}
             </p>
 
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="bg-white text-orange-600 rounded-xl p-4 text-center"
+              className={`bg-white rounded-xl p-4 text-center ${
+                state.theme === 'adult' ? 'text-green-600' : offer.isReward ? 'text-green-600' : 'text-orange-600'
+              }`}
             >
-              <div className="text-3xl mb-2">📋</div>
+              <div className="text-3xl mb-2">
+                {state.theme === 'adult' ? '💰' : offer.isReward ? '🎁' : '📋'}
+              </div>
               <p className="font-bold text-lg">{offer.text}</p>
             </motion.div>
           </div>
@@ -105,7 +169,11 @@ const BankerOffer: React.FC = () => {
           </div>
 
           <p className="text-center text-sm mt-4 opacity-75">
-            If you accept, the game ends and you'll do this activity!
+            {state.theme === 'adult'
+              ? 'If you accept, the game ends and you get this money!'
+              : offer.isReward
+              ? 'If you accept, the game ends and you get this reward!'
+              : 'If you accept, the game ends and you\'ll do this activity!'}
           </p>
         </motion.div>
       </motion.div>

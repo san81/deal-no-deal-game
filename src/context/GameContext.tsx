@@ -3,12 +3,14 @@ import { GameState, GamePhase, Theme, Suitcase, GameItem } from '../types/game.t
 import { selectRandomActivities } from '../data/activities';
 import { selectRandomBoyRewards } from '../data/boyTheme';
 import { selectRandomGirlRewards } from '../data/girlTheme';
+import { selectRandomAdultActivities, selectRandomAdultRewards } from '../data/adultTheme';
+import { generateAdultAmounts, selectRandomAdultAmounts } from '../utils/adultAmountGenerator';
 import { createShuffledGameItems } from '../utils/randomSelection';
 
 interface GameContextType {
   state: GameState;
   setPhase: (phase: GamePhase) => void;
-  selectTheme: (theme: Theme) => void;
+  selectTheme: (theme: Theme, adultMultiplier?: number, numberOfPlayers?: number) => void;
   selectPlayerCase: (caseId: number) => void;
   openCase: (caseId: number) => void;
   acceptBankerOffer: (activity: GameItem) => void;
@@ -17,12 +19,12 @@ interface GameContextType {
   declineSwap: () => void;
   openFinalCase: () => void;
   resetGame: () => void;
-  startNewGame: (theme?: Theme) => void;
+  startNewGame: (theme?: Theme, adultMultiplier?: number, numberOfPlayers?: number) => void;
 }
 
 type GameAction =
   | { type: 'SET_PHASE'; payload: GamePhase }
-  | { type: 'SELECT_THEME'; payload: Theme }
+  | { type: 'SELECT_THEME'; payload: { theme: Theme; adultMultiplier?: number; numberOfPlayers?: number } }
   | { type: 'SELECT_PLAYER_CASE'; payload: number }
   | { type: 'OPEN_CASE'; payload: number }
   | { type: 'ACCEPT_BANKER_OFFER'; payload: GameItem }
@@ -31,7 +33,7 @@ type GameAction =
   | { type: 'DECLINE_SWAP' }
   | { type: 'OPEN_FINAL_CASE' }
   | { type: 'RESET_GAME' }
-  | { type: 'START_NEW_GAME'; payload?: Theme };
+  | { type: 'START_NEW_GAME'; payload?: { theme?: Theme; adultMultiplier?: number; numberOfPlayers?: number } };
 
 const initialState: GameState = {
   phase: 'kid-setup',
@@ -46,6 +48,8 @@ const initialState: GameState = {
   swapAccepted: false,
   originalCaseId: null,
   result: null,
+  adultMultiplier: undefined,
+  numberOfPlayers: undefined,
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -56,13 +60,25 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, phase: action.payload };
 
     case 'SELECT_THEME': {
-      const theme = action.payload;
+      const { theme, adultMultiplier, numberOfPlayers } = action.payload;
       // Always select exactly 4 activities and 3 rewards
-      const activities = selectRandomActivities(4);
-      const rewards =
-        theme === 'boy'
+      let activities, rewards;
+
+      if (theme === 'adult' && adultMultiplier && numberOfPlayers) {
+        // Generate dynamic amounts based on multiplier and number of players
+        const generatedAmounts = generateAdultAmounts(numberOfPlayers, adultMultiplier);
+        activities = selectRandomAdultAmounts(generatedAmounts.activities, 4);
+        rewards = selectRandomAdultAmounts(generatedAmounts.rewards, 3);
+      } else if (theme === 'adult') {
+        // Fallback to static amounts if multiplier not provided
+        activities = selectRandomAdultActivities(4);
+        rewards = selectRandomAdultRewards(3);
+      } else {
+        activities = selectRandomActivities(4);
+        rewards = theme === 'boy'
           ? selectRandomBoyRewards(3)
           : selectRandomGirlRewards(3);
+      }
 
       const gameItems = createShuffledGameItems(activities, rewards);
 
@@ -81,6 +97,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         activities: gameItems.filter((item) => !item.isReward),
         rewards: gameItems.filter((item) => item.isReward),
         phase: 'case-selection',
+        adultMultiplier: theme === 'adult' ? adultMultiplier : undefined,
+        numberOfPlayers: theme === 'adult' ? numberOfPlayers : undefined,
       };
     }
 
@@ -230,15 +248,31 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return initialState;
 
     case 'START_NEW_GAME': {
-      const theme = action.payload || state.theme;
+      const payload = action.payload;
+      const theme = payload?.theme || state.theme;
+      const adultMultiplier = payload?.adultMultiplier || state.adultMultiplier;
+      const numberOfPlayers = payload?.numberOfPlayers || state.numberOfPlayers;
+
       if (!theme) return initialState;
 
       // Always select exactly 4 activities and 3 rewards
-      const activities = selectRandomActivities(4);
-      const rewards =
-        theme === 'boy'
+      let activities, rewards;
+
+      if (theme === 'adult' && adultMultiplier && numberOfPlayers) {
+        // Generate dynamic amounts based on multiplier and number of players
+        const generatedAmounts = generateAdultAmounts(numberOfPlayers, adultMultiplier);
+        activities = selectRandomAdultAmounts(generatedAmounts.activities, 4);
+        rewards = selectRandomAdultAmounts(generatedAmounts.rewards, 3);
+      } else if (theme === 'adult') {
+        // Fallback to static amounts if multiplier not provided
+        activities = selectRandomAdultActivities(4);
+        rewards = selectRandomAdultRewards(3);
+      } else {
+        activities = selectRandomActivities(4);
+        rewards = theme === 'boy'
           ? selectRandomBoyRewards(3)
           : selectRandomGirlRewards(3);
+      }
 
       const gameItems = createShuffledGameItems(activities, rewards);
 
@@ -256,6 +290,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         activities: gameItems.filter((item) => !item.isReward),
         rewards: gameItems.filter((item) => item.isReward),
         phase: 'case-selection',
+        adultMultiplier: theme === 'adult' ? adultMultiplier : undefined,
+        numberOfPlayers: theme === 'adult' ? numberOfPlayers : undefined,
       };
     }
 
@@ -271,8 +307,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'SET_PHASE', payload: phase });
   };
 
-  const selectTheme = (theme: Theme) => {
-    dispatch({ type: 'SELECT_THEME', payload: theme });
+  const selectTheme = (theme: Theme, adultMultiplier?: number, numberOfPlayers?: number) => {
+    dispatch({ type: 'SELECT_THEME', payload: { theme, adultMultiplier, numberOfPlayers } });
   };
 
   const selectPlayerCase = (caseId: number) => {
@@ -307,8 +343,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'RESET_GAME' });
   };
 
-  const startNewGame = (theme?: Theme) => {
-    dispatch({ type: 'START_NEW_GAME', payload: theme });
+  const startNewGame = (theme?: Theme, adultMultiplier?: number, numberOfPlayers?: number) => {
+    dispatch({ type: 'START_NEW_GAME', payload: theme ? { theme, adultMultiplier, numberOfPlayers } : undefined });
   };
 
   return (

@@ -12,14 +12,15 @@ type SoundType =
   | 'no-deal'
   | 'swap'
   | 'drumroll'
-  | 'fanfare';
+  | 'fanfare'
+  | 'wheel-winner';
 
 /**
  * Simple sound hook using Web Audio API
  * Generates basic tones for feedback until real sound files are added
  */
 export const useSound = () => {
-  const playSound = useCallback((type: SoundType) => {
+  const playSound = useCallback((type: SoundType, loop: boolean = false) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -38,12 +39,12 @@ export const useSound = () => {
           break;
 
         case 'spin':
-          // Ticking sound simulation
-          oscillator.frequency.value = 1200;
-          gainNode.gain.value = 0.15;
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.05);
-          break;
+          // Play actual spinning wheel sound file
+          const audio = new Audio('/sounds/wheel-spin-click-slow-down-fast-101154.mp3');
+          audio.volume = 0.5;
+          audio.loop = loop;
+          audio.play().catch((err) => console.warn('Audio playback failed:', err));
+          return audio; // Return audio element so it can be stopped later
 
         case 'confetti':
           oscillator.frequency.value = 1500;
@@ -140,6 +141,13 @@ export const useSound = () => {
             }, index * 100);
           });
           break;
+
+        case 'wheel-winner':
+          // Play tada fanfare when wheel selects a player
+          const fanfareAudio = new Audio('/sounds/tada-fanfare-a-6313.mp3');
+          fanfareAudio.volume = 0.6;
+          fanfareAudio.play().catch((err) => console.warn('Fanfare playback failed:', err));
+          return fanfareAudio;
 
         default:
           oscillator.frequency.value = 600;

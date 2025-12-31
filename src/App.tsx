@@ -15,6 +15,9 @@ function GameFlow() {
   const { kidState, selectKid, resetAllKids } = useKids();
 
   const handleWheelReady = () => {
+    // Reset all kids to make them available for spinning
+    // This ensures the wheel shows all kids from the setup screen
+    resetAllKids();
     setPhase('wheel-spin');
   };
 
@@ -23,8 +26,9 @@ function GameFlow() {
     setPhase('theme-selection');
   };
 
-  const handleThemeSelect = (theme: Theme) => {
-    selectTheme(theme);
+  const handleThemeSelect = (theme: Theme, adultMultiplier?: number) => {
+    const numberOfPlayers = kidState.allKids.length;
+    selectTheme(theme, adultMultiplier, numberOfPlayers);
   };
 
   const handleNextKid = () => {
