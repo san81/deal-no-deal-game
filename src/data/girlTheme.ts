@@ -3,8 +3,8 @@
 export const GIRL_REWARDS = [
   { text: '🍫 Chocolate bar', weight: 2 },
   { text: '🍦 Ice cream', weight: 3 },
-  { text: '💎 Pendant necklace', weight: 8 },
-  { text: '🎀 Hair accessories set', weight: 5 },
+  { text: '💎 Twix', weight: 8 },
+  { text: '🎀 Lego set', weight: 5 },
   { text: '🎨 Art supplies kit', weight: 7 },
   { text: '🍕 Choose favorite dinner', weight: 4 },
   { text: '👭 Sleepover with friend pass', weight: 8 },
