@@ -54,10 +54,11 @@ export const useSound = () => {
           break;
 
         case 'case-open':
-          oscillator.frequency.value = 600;
-          gainNode.gain.value = 0.15;
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.2);
+          // Play sci-fi suitcase opening sound
+          const caseAudio = new Audio('/sounds/sci-fi-intro-logo-reveal-2-227275.mp3');
+          caseAudio.volume = 0.6;
+          caseAudio.play().catch((err) => console.warn('Case open audio playback failed:', err));
+          return caseAudio;
           break;
 
         case 'reward':
