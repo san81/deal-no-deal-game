@@ -111,20 +111,11 @@ export const useSound = () => {
           break;
 
         case 'drumroll':
-          // Rapid low tones
-          const interval = setInterval(() => {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 200;
-            gain.gain.value = 0.1;
-            osc.start();
-            osc.stop(ctx.currentTime + 0.05);
-          }, 50);
-          setTimeout(() => clearInterval(interval), 1000);
-          break;
+          // Play drum roll sound before opening player suitcase
+          const drumrollAudio = new Audio('/sounds/drum-roll-2-228358.mp3');
+          drumrollAudio.volume = 0.5;
+          drumrollAudio.play().catch((err) => console.warn('Drumroll audio playback failed:', err));
+          return drumrollAudio;
 
         case 'fanfare':
           // Victory sound
